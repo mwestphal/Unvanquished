@@ -47,6 +47,7 @@ Maryland 20850 USA.
 
 #include "sys_local.h"
 #include "sys_loadlib.h"
+#include "sys_main_logo.h"
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -654,7 +655,87 @@ int ALIGN_STACK main( int argc, char **argv )
 		CON_Init_TTY();
 	}
 
-	Com_Init( commandLine );
+#if 0
+// Accelerated splash screen and com_init in another thread, works only with r_smp 1
+        SDL_Window  *splashscreen_window;
+        SDL_Renderer *ren;
+        SDL_Surface* logo = NULL;
+        SDL_Texture *tex;
+
+        // SDL MUST be initialized in software to prevent any mixup between
+        // the engine renderer sdl open gl and the splashscreen renderer. The engine renderer still render accelerated.
+        SDL_SetHint( SDL_HINT_RENDER_DRIVER, "software" );
+        SDL_Init( SDL_INIT_VIDEO );
+
+        splashscreen_window = SDL_CreateWindow("Splash", 100, 100, 272, 183, SDL_WINDOW_SHOWN);
+        ren = SDL_CreateRenderer( splashscreen_window, -1, SDL_RENDERER_ACCELERATED );
+        SDL_RWops * z = SDL_RWFromConstMem( logo_data, sizeof(logo_data) );
+        logo = SDL_LoadBMP_RW( z, 1 );
+        tex = SDL_CreateTextureFromSurface(ren, logo);
+
+        SDL_RenderClear(ren);
+        SDL_RenderCopy(ren, tex, NULL, NULL);
+        SDL_RenderPresent(ren);
+
+        std::thread init ( Com_Init , commandLine );
+        init.join();
+
+        SDL_DestroyRenderer( ren );
+        SDL_DestroyWindow( splashscreen_window );
+
+ // Accelerated splash screen and com_init in same thread, provoking a black screen with engine renderer
+        SDL_Window  *splashscreen_window;
+        SDL_Renderer *ren;
+        SDL_Surface* logo = NULL;
+        SDL_Texture *tex;
+
+        // SDL MUST be initialized in software to prevent any mixup between
+        // the engine renderer sdl open gl and the splashscreen renderer. The engine renderer still render accelerated.
+        SDL_SetHint( SDL_HINT_RENDER_DRIVER, "software" );
+        SDL_Init( SDL_INIT_VIDEO );
+
+        splashscreen_window = SDL_CreateWindow("Splash", 100, 100, 272, 183, SDL_WINDOW_SHOWN);
+        ren = SDL_CreateRenderer( splashscreen_window, -1, SDL_RENDERER_ACCELERATED );
+        SDL_RWops * z = SDL_RWFromConstMem( logo_data, sizeof(logo_data) );
+        logo = SDL_LoadBMP_RW( z, 1 );
+        tex = SDL_CreateTextureFromSurface(ren, logo);
+
+        SDL_RenderClear(ren);
+        SDL_RenderCopy(ren, tex, NULL, NULL);
+        SDL_RenderPresent(ren);
+
+        Com_Init( commandLine );
+
+        SDL_DestroyRenderer( ren );  // This line will eventually destroy the renderer shader program, wich is what provoke the black screen, commenting this line out resolve the problem but is unclean
+#else
+// Software rendered splashscreen
+        SDL_Window  *splashscreen_window;
+        SDL_Renderer *ren;
+        SDL_Surface* logo = NULL;
+        SDL_Texture *tex;
+
+        // SDL MUST be initialized in software to prevent any mixup between
+        // the engine renderer sdl open gl and the splashscreen renderer. The engine renderer still render accelerated.
+        // Without it, a texture emulated frame buffer object will be associated with the splashscreen window (SDL_video.c)
+        // provoking a segfault at the window destruction, because of a mixup with the engine sdl usage.
+        SDL_SetHint( SDL_HINT_RENDER_DRIVER, "software" );
+        SDL_Init( SDL_INIT_VIDEO );
+
+        splashscreen_window = SDL_CreateWindow("Splash", 100, 100, 272, 183, SDL_WINDOW_SHOWN);
+        ren = SDL_CreateRenderer( splashscreen_window, -1, SDL_RENDERER_SOFTWARE );
+        SDL_RWops * z = SDL_RWFromConstMem( logo_data, sizeof(logo_data) );
+        logo = SDL_LoadBMP_RW( z, 1 );
+        tex = SDL_CreateTextureFromSurface(ren, logo);
+
+        SDL_RenderClear(ren);
+        SDL_RenderCopy(ren, tex, NULL, NULL);
+        SDL_RenderPresent(ren);
+
+        Com_Init( commandLine );
+
+        SDL_DestroyRenderer( ren );
+        SDL_DestroyWindow( splashscreen_window );
+#endif
 	NET_Init();
 
 	signal( SIGILL, Sys_SigHandler );
