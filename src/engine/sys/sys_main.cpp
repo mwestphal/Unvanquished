@@ -656,6 +656,7 @@ int ALIGN_STACK main( int argc, char **argv )
 	}
 
 #if 0
+#if defined(_WIN32) || defined(BUILD_CLIENT)
 // Accelerated splash screen and com_init in another thread, works only with r_smp 1
         SDL_Window  *splashscreen_window;
         SDL_Renderer *ren;
@@ -677,13 +678,17 @@ int ALIGN_STACK main( int argc, char **argv )
         SDL_RenderCopy(ren, tex, NULL, NULL);
         SDL_RenderPresent(ren);
 
+#endif
         std::thread init ( Com_Init , commandLine );
         init.join();
 
+#if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );
         SDL_DestroyWindow( splashscreen_window );
+#endif
 
- // Accelerated splash screen and com_init in same thread, provoking a black screen with engine renderer
+// Accelerated splash screen and com_init in same thread, provoking a black screen with engine renderer
+#if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_Window  *splashscreen_window;
         SDL_Renderer *ren;
         SDL_Surface* logo = NULL;
@@ -703,11 +708,16 @@ int ALIGN_STACK main( int argc, char **argv )
         SDL_RenderClear(ren);
         SDL_RenderCopy(ren, tex, NULL, NULL);
         SDL_RenderPresent(ren);
+#endif
 
         Com_Init( commandLine );
 
+#if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );  // This line will eventually destroy the renderer shader program, wich is what provoke the black screen, commenting this line out resolve the problem but is unclean
+        SDL_DestroyWindow( splashscreen_window );
+#endif
 #else
+#if defined(_WIN32) || defined(BUILD_CLIENT)
 // Software rendered splashscreen
         SDL_Window  *splashscreen_window;
         SDL_Renderer *ren;
@@ -730,11 +740,13 @@ int ALIGN_STACK main( int argc, char **argv )
         SDL_RenderClear(ren);
         SDL_RenderCopy(ren, tex, NULL, NULL);
         SDL_RenderPresent(ren);
-
+#endif
         Com_Init( commandLine );
 
+#if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );
         SDL_DestroyWindow( splashscreen_window );
+#endif
 #endif
 	NET_Init();
 
