@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../framework/CommandSystem.h"
 
 SDL_Window         *window = NULL;
+SDL_Window         **unvanquished_window = &window;
 static SDL_GLContext glContext = NULL;
 
 #ifdef SMP
@@ -493,7 +494,7 @@ static int GLimp_SetMode( int mode, qboolean fullscreen, qboolean noborder )
 	int         i = 0;
 	SDL_Surface *icon = NULL;
 	SDL_DisplayMode desktopMode;
-	Uint32      flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+	Uint32      flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
 	int         x, y;
 	GLenum      glewResult;
 
@@ -784,6 +785,9 @@ static int GLimp_SetMode( int mode, qboolean fullscreen, qboolean noborder )
 				ri.Printf( PRINT_DEVELOPER, "SDL_GL_CreateContext failed: %s\n", SDL_GetError() );
 				continue;
 			}
+                        glClearColor( 0, 0, 0, 1 );
+                        glClear( GL_COLOR_BUFFER_BIT );
+                        SDL_GL_SwapWindow( window );
 #if SDL_VERSION_ATLEAST( 2, 0, 0 )
 			SDL_GL_SetSwapInterval( r_swapInterval->integer );
 #endif

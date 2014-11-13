@@ -531,6 +531,11 @@ void Sys_HelpText( const char *binaryName )
 #else
 #define ALIGN_STACK
 #endif
+
+#if defined(_WIN32) || defined(BUILD_CLIENT)
+extern SDL_Window **unvanquished_window;
+#endif
+
 int ALIGN_STACK main( int argc, char **argv )
 {
 	int  i;
@@ -685,6 +690,7 @@ int ALIGN_STACK main( int argc, char **argv )
 #if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );
         SDL_DestroyWindow( splashscreen_window );
+        SDL_ShowWindow( *unvanquished_window );
 #endif
 
 // Accelerated splash screen and com_init in same thread, provoking a black screen with engine renderer
@@ -715,6 +721,7 @@ int ALIGN_STACK main( int argc, char **argv )
 #if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );  // This line will eventually destroy the renderer shader program, wich is what provoke the black screen, commenting this line out resolve the problem but is unclean
         SDL_DestroyWindow( splashscreen_window );
+        SDL_ShowWindow( *unvanquished_window );
 #endif
 #else
 #if defined(_WIN32) || defined(BUILD_CLIENT)
@@ -746,6 +753,7 @@ int ALIGN_STACK main( int argc, char **argv )
 #if defined(_WIN32) || defined(BUILD_CLIENT)
         SDL_DestroyRenderer( ren );
         SDL_DestroyWindow( splashscreen_window );
+        SDL_ShowWindow( *unvanquished_window );
 #endif
 #endif
 	NET_Init();
